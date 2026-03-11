@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 export class CacheService {
   private redis: Redis;
   private readonly DEFAULT_TTL_SECONDS = 3600; // 1 Hour
-  private isConnected = false;
+  public connected = false;
 
   constructor() {
     // Attempt to connect to Redis using REDIS_URL from env, or default to localhost
@@ -26,14 +26,14 @@ export class CacheService {
     });
 
     this.redis.on('error', (err) => {
-      if (this.isConnected) {
+      if (this.connected) {
         console.warn('[CacheService] Redis connection lost:', err.message, '- caching disabled until reconnect');
       }
-      this.isConnected = false;
+      this.connected = false;
     });
 
     this.redis.on('connect', () => {
-      this.isConnected = true;
+      this.connected = true;
       console.log('[CacheService] Connected to Redis successfully');
     });
   }
@@ -87,12 +87,6 @@ export class CacheService {
     return `${prefix}:${JSON.stringify(args)}`;
   }
 
-  /**
-   * Check if Redis is currently connected.
-   */
-  public get connected(): boolean {
-    return this.isConnected;
-  }
 
   /**
    * Close the Redis connection (useful for testing scripts).
