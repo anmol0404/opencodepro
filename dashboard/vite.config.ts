@@ -8,12 +8,28 @@ export default defineConfig({
     host: true,
     port: 3031,
     proxy: {
-      '/api': 'http://localhost:3032',
-      '/v1': 'http://localhost:3032'
+      '/api': {
+        target: 'http://127.0.0.1:3032',
+        changeOrigin: true
+      },
+      '/v1': {
+        target: 'http://127.0.0.1:3032',
+        changeOrigin: true
+      }
     }
   },
   preview: {
     host: true,
-    port: 3031
+    port: 3031,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3032',
+        changeOrigin: true
+      },
+      '/v1': {
+        target: 'http://127.0.0.1:3032',
+        changeOrigin: true
+      }
+    }
   }
 })
