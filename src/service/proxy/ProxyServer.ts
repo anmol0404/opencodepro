@@ -854,8 +854,8 @@ export const proxyApp = app;
 const PORT = process.env.PROXY_PORT || process.env.PORT || 3010;
 export function startProxyServer() {
   MaintenanceService.start(imageCache);
-  app.listen(PORT, () => {
-    console.log(`[ProxyServer] Running on http://localhost:${PORT}`);
+  app.listen(PORT as number, '0.0.0.0', () => {
+    console.log(`[ProxyServer] Running on http://0.0.0.0:${PORT}`);
     console.log(`[ProxyServer] Admin API: /api/admin/stats`);
     console.log(`[ProxyServer] OpenAI API: /v1/chat/completions`);
   });
