@@ -8,8 +8,11 @@
     "test:deep": "ts-node scripts/test-deep-search.ts",
     "test:benchmark": "ts-node scripts/test-benchmark.ts",
     "setup:engine": "ts-node scripts/setup-engine.ts",
-    "start:proxy": "ts-node scripts/start-proxy.ts",
-    "build": "tsc"
+    "dev:proxy": "ts-node scripts/start-proxy.ts",
+    "dev:dashboard": "cd dashboard && npm run dev",
+    "prod:proxy": "node dist/scripts/start-proxy.js",
+    "prod:dashboard": "cd dashboard && npm start",
+    "build": "tsc && cd dashboard && npm run build"
   },
   "keywords": [
     "ai",
