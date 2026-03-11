@@ -87,6 +87,13 @@ export class CacheService {
     return `${prefix}:${JSON.stringify(args)}`;
   }
 
+  /**
+   * Check if Redis is currently connected.
+   */
+  public getConnected(): boolean {
+    return this.connected;
+  }
+
 
   /**
    * Close the Redis connection (useful for testing scripts).
@@ -97,4 +104,4 @@ export class CacheService {
 }
 
 // Export singleton instance
-export const cacheService = new CacheService();
+export const cacheService: CacheService = new CacheService();

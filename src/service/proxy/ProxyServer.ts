@@ -14,7 +14,7 @@ import { checkKeyLimits, recordKeyRequest, invalidateKeyCache, getKeyUsageStats,
 import { mcpService } from '../mcp/MCPService';
 import { MaintenanceService } from '../maintenance/MaintenanceService';
 import { searchAdapter } from '../search/SearchAdapter';
-import { cacheService } from '../cache/CacheService';
+import { cacheService, CacheService } from '../cache/CacheService';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 
@@ -559,7 +559,7 @@ app.get('/api/admin/providers', verifyToken, async (req: any, res: Response) => 
 });
 
 app.get('/api/admin/health', verifyToken, async (req: any, res: Response) => {
-  const redisOk = cacheService.connected;
+  const redisOk = cacheService.getConnected();
   let dbOk = false;
   try {
     await dbService.get('SELECT 1', []);
