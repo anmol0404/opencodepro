@@ -158,7 +158,8 @@ export class ProviderManager {
   public async reloadKeysFromDB() {
     try {
       const rows = await dbService.all<{ provider_name: string; api_key: string }>(
-        'SELECT provider_name, api_key FROM provider_keys WHERE is_active = 1'
+        'SELECT provider_name, api_key FROM provider_keys WHERE is_active = 1',
+        []
       );
 
       const dbKeys: Record<string, string[]> = {};
@@ -193,7 +194,7 @@ export class ProviderManager {
 
   private async loadStatsFromDB() {
     try {
-      const rows = await dbService.all<any>('SELECT * FROM provider_stats');
+      const rows = await dbService.all<any>('SELECT * FROM provider_stats', []);
       rows.forEach(row => {
         if (this.stats[row.provider_name]) {
           const s = this.stats[row.provider_name];
