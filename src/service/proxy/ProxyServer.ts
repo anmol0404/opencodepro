@@ -15,6 +15,7 @@ import { mcpService } from '../mcp/MCPService';
 import { MaintenanceService } from '../maintenance/MaintenanceService';
 import { searchAdapter } from '../search/SearchAdapter';
 import { cacheService, CacheService } from '../cache/CacheService';
+import { curationService } from '../curation/CurationService';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 
@@ -65,7 +66,7 @@ app.get('/', (req, res) => {
     status: "active",
     service: "Opencode Wrapper API (TS)",
     version: "2.0.0",
-    endpoints: ["/v1/chat/completions", "/v1/images/generations", "/v1/images/edits", "/v1/models"]
+    endpoints: ["/v1/chat/completions", "/v1/images/generations", "/v1/images/edits", "/v1/models", "/v1/curate"]
   });
 });
 
@@ -106,7 +107,14 @@ const verifyWrapperKey = async (req: any, res: Response, next: NextFunction) => 
     // Not a valid JWT, proceed to Wrapper Key check
   }
 
-  // 2. Try Wrapper Key (External API)
+  // 2. Allow system-level AI_CLIENT_API_KEY from environment
+  const systemKey = process.env.AI_CLIENT_API_KEY;
+  if (systemKey && token === systemKey) {
+    req.wrapperKeyId = -1; // Reserved ID for system internal key
+    return next();
+  }
+
+  // 3. Try Wrapper Key (External API)
   const hash = createHash('sha256').update(token).digest('hex');
 
   try {
@@ -456,6 +464,49 @@ app.post('/v1/tools/execute', verifyWrapperKey, async (req: any, res: Response) 
 
     const result = await mcpService.executeTool(server, tool, toolArgs);
     res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: { message: (err as Error).message } });
+  }
+});
+
+/**
+ * @route POST /v1/curate
+ * Standalone Curation Engine Endpoint
+ */
+app.post('/v1/curate', verifyWrapperKey, async (req: any, res: Response) => {
+  try {
+    const { 
+      query, 
+      systemPrompt, 
+      outputSchema, 
+      callbackUrl, 
+      trustedDomains, 
+      maxSources 
+    } = req.body;
+
+    if (!query || !systemPrompt || !outputSchema || !callbackUrl) {
+      return res.status(400).json({ 
+        error: "Missing required fields: query, systemPrompt, outputSchema, callbackUrl" 
+      });
+    }
+
+    // Start curation asynchronously (Webhook pattern)
+    curationService.curate({
+      query,
+      systemPrompt,
+      outputSchema,
+      callbackUrl,
+      trustedDomains,
+      maxSources
+    }).catch(err => {
+      console.error(`[Proxy] Async Curation Task Failed:`, err.message);
+    });
+
+    res.json({ 
+      status: "processing", 
+      message: "Curation task started. Results will be posted to the callback URL." 
+    });
+
   } catch (err) {
     res.status(500).json({ error: { message: (err as Error).message } });
   }

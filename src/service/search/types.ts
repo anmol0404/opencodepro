@@ -3,6 +3,7 @@ export interface SearchResult {
   link: string;
   snippet: string;
   source: string;
+  imageUrl?: string | null;
 }
 
 export interface SearchOptions {

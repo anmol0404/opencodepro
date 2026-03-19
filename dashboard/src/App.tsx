@@ -15,7 +15,9 @@ import {
   Cpu,
   MessageSquare,
   DollarSign,
-  PieChart
+  PieChart,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -46,6 +48,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isLoginPage = location.pathname === '/login';
@@ -76,15 +79,26 @@ function App() {
   return (
     <div className="flex h-screen bg-gray-950 overflow-hidden">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 border-r border-white/5 transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0`}>
-        <div className="flex flex-col h-full p-4">
-          <div className="flex items-center gap-3 px-2 mb-8">
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20">
-              <Zap className="w-6 h-6 text-white" />
+      <aside className={`fixed inset-y-0 left-0 z-50 ${isCollapsed ? 'w-20' : 'w-64'} bg-gray-900 border-r border-white/5 transform transition-all duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0`}>
+        <div className="flex flex-col h-full p-4 overflow-hidden relative">
+          <div className={`flex ${isCollapsed ? 'flex-col items-center gap-4' : 'items-center justify-between'} mb-8 px-2`}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 shrink-0">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              {!isCollapsed && (
+                <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent whitespace-nowrap">
+                  AI Engine
+                </span>
+              )}
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              AI Engine
-            </span>
+            <button 
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className={`${isCollapsed ? 'w-10 h-10' : 'p-1.5'} flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors`}
+              title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={18} />}
+            </button>
           </div>
 
           <nav className="flex-1 space-y-2">
@@ -95,10 +109,11 @@ function App() {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`nav-link ${isActive ? 'active' : ''}`}
+                  className={`nav-link ${isActive ? 'active' : ''} ${isCollapsed ? 'justify-center px-0 h-12' : ''}`}
+                  title={isCollapsed ? item.label : ''}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && <span className="whitespace-nowrap">{item.label}</span>}
                 </Link>
               );
             })}
@@ -106,10 +121,11 @@ function App() {
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-xl transition-all mt-auto"
+            className={`flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-xl transition-all mt-auto ${isCollapsed ? 'justify-center px-0' : ''}`}
+            title={isCollapsed ? 'Logout' : ''}
           >
-            <LogOut className="w-5 h-5" />
-            <span>Logout</span>
+            <LogOut className="w-5 h-5 shrink-0" />
+            {!isCollapsed && <span className="whitespace-nowrap">Logout</span>}
           </button>
         </div>
       </aside>
