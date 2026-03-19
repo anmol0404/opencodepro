@@ -1,5 +1,11 @@
 import { SerperProvider } from './providers/SerperProvider';
 import { DuckDuckGoProvider } from './providers/DuckDuckGoProvider';
+import { TheNewsAPIProvider } from './providers/TheNewsAPIProvider';
+import { GNewsProvider } from './providers/GNewsProvider';
+import { MediastackProvider } from './providers/MediastackProvider';
+import { NewsDataProvider } from './providers/NewsDataProvider';
+import { WorldNewsAPIProvider } from './providers/WorldNewsAPIProvider';
+import { NewsApiOrgProvider } from './providers/NewsApiOrgProvider';
 import { ISearchProvider, SearchResult, SearchOptions } from './types';
 import { cacheService } from '../cache/CacheService';
 import { urlReader } from '../reader/UrlReader';
@@ -7,6 +13,12 @@ import { urlReader } from '../reader/UrlReader';
 export class SearchAdapter {
   private primaryProvider: ISearchProvider;
   private fallbackProvider: ISearchProvider;
+  private newsProvider: ISearchProvider;
+  private newsFallbackProvider: ISearchProvider;
+  private newsUltimateFallbackProvider: ISearchProvider;
+  private newsDataFallbackProvider: ISearchProvider;
+  private worldNewsProvider: ISearchProvider;
+  private newsApiOrgProvider: ISearchProvider;
 
   // We keep a lightweight blacklist out of the box to avoid low-value SEO spam
   private defaultBlacklistDomains = [
@@ -18,11 +30,23 @@ export class SearchAdapter {
 
   constructor(
     primaryProvider?: ISearchProvider,
-    fallbackProvider?: ISearchProvider
+    fallbackProvider?: ISearchProvider,
+    newsProvider?: ISearchProvider,
+    newsFallbackProvider?: ISearchProvider,
+    newsUltimateFallbackProvider?: ISearchProvider,
+    newsDataFallbackProvider?: ISearchProvider,
+    worldNewsProvider?: ISearchProvider,
+    newsApiOrgProvider?: ISearchProvider
   ) {
     // Attempt Serper (Google) first, if it fails or has no key, use DDG
     this.primaryProvider = primaryProvider || new SerperProvider();
     this.fallbackProvider = fallbackProvider || new DuckDuckGoProvider();
+    this.newsProvider = newsProvider || new TheNewsAPIProvider();
+    this.newsFallbackProvider = newsFallbackProvider || new GNewsProvider();
+    this.newsUltimateFallbackProvider = newsUltimateFallbackProvider || new MediastackProvider();
+    this.newsDataFallbackProvider = newsDataFallbackProvider || new NewsDataProvider();
+    this.worldNewsProvider = worldNewsProvider || new WorldNewsAPIProvider();
+    this.newsApiOrgProvider = newsApiOrgProvider || new NewsApiOrgProvider();
   }
 
   private isAllowed(urlStr: string): boolean {
@@ -54,12 +78,78 @@ export class SearchAdapter {
       results = await this.fallbackProvider.search(query, options);
     }
 
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] Both providers failed. Trying ${this.newsProvider.name} as a final fallback.`);
+      results = await this.newsProvider.search(query, options);
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] All standard providers failed. Trying ${this.newsFallbackProvider.name} as fallback.`);
+      results = await this.newsFallbackProvider.search(query, options);
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] Still no results. Trying ${this.newsUltimateFallbackProvider.name} as fallback.`);
+      results = await this.newsUltimateFallbackProvider.search(query, options);
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] All standard providers failed. Trying ${this.newsDataFallbackProvider.name} as fallback.`);
+      results = await this.newsDataFallbackProvider.search(query, options);
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] Still no results. Trying ${this.worldNewsProvider.name} as absolute fallback.`);
+      results = await this.worldNewsProvider.search(query, options);
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] No results yet. Trying ${this.newsApiOrgProvider.name} as final absolute fallback.`);
+      results = await this.newsApiOrgProvider.search(query, options);
+    }
+
     const cleanResults = results
       .filter(res => this.isAllowed(res.link))
       .filter((v, i, a) => a.findIndex(t => (t.link === v.link)) === i);
 
     await cacheService.set(cacheKey, cleanResults);
     return cleanResults;
+  }
+
+  /**
+   * Specifically targets news articles from thousands of global sources.
+   * Useful when we want to ensure content is news-centric.
+   */
+  public async searchNews(query: string, limit: number = 10): Promise<SearchResult[]> {
+    console.log(`[SearchAdapter] Fetching news content for: "${query}" via ${this.newsProvider.name}`);
+    let results = await this.newsProvider.search(query, { limit });
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] ${this.newsProvider.name} failed. Falling back to ${this.newsFallbackProvider.name}.`);
+      results = await this.newsFallbackProvider.search(query, { limit });
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] ${this.newsFallbackProvider.name} failed. Falling back to ${this.newsUltimateFallbackProvider.name}.`);
+      results = await this.newsUltimateFallbackProvider.search(query, { limit });
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] ${this.newsUltimateFallbackProvider.name} failed. Falling back to ${this.newsDataFallbackProvider.name}.`);
+      results = await this.newsDataFallbackProvider.search(query, { limit });
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] ${this.newsDataFallbackProvider.name} failed. Falling back to ${this.worldNewsProvider.name}.`);
+      results = await this.worldNewsProvider.search(query, { limit });
+    }
+
+    if (!results || results.length === 0) {
+      console.warn(`[SearchAdapter] ${this.worldNewsProvider.name} failed. Falling back to ${this.newsApiOrgProvider.name}.`);
+      results = await this.newsApiOrgProvider.search(query, { limit });
+    }
+
+    return results;
   }
 
   /**

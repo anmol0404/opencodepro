@@ -1,20 +1,23 @@
 import { ISearchProvider, SearchResult, SearchOptions } from '../types';
+import { ApiKeyRoundRobin, getApiKeys } from '../ApiKeyManager';
 
+/**
+ * # 🔎 SERPER PROVIDER (GOOGLE)
+ * Implementation of ISearchProvider for serper.dev
+ * Documentation: https://serper.dev/
+ */
 export class SerperProvider implements ISearchProvider {
   name = 'Serper (Google)';
-  private apiKeys: string[];
-  private currentKeyIndex = 0;
+  private apiKeys: ApiKeyRoundRobin;
 
   constructor(keysEnvString?: string) {
-    const envString = keysEnvString || process.env.SERPER_API_KEYS || process.env.SERPER_API_KEY || "";
-    this.apiKeys = envString.split(',').map(k => k.trim()).filter(k => k.length > 0);
+    this.apiKeys = new ApiKeyRoundRobin(
+      getApiKeys(["SERPER_API_KEYS", "SERPER_API_KEY"], keysEnvString)
+    );
   }
 
   private getNextKey(): string | null {
-    if (this.apiKeys.length === 0) return null;
-    const key = this.apiKeys[this.currentKeyIndex];
-    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.apiKeys.length;
-    return key;
+    return this.apiKeys.next();
   }
 
   async search(query: string, options?: SearchOptions): Promise<SearchResult[]> {

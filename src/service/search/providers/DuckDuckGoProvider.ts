@@ -1,5 +1,10 @@
 import { ISearchProvider, SearchResult, SearchOptions } from '../types';
 
+/**
+ * # 🦆 DUCKDUCKGO PROVIDER
+ * Implementation of ISearchProvider for duckduckgo.com
+ * Using HTML parsing for free/fallback search.
+ */
 export class DuckDuckGoProvider implements ISearchProvider {
   name = 'DuckDuckGo';
 

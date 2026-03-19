@@ -74,6 +74,43 @@ app.get('/', (req, res) => {
 const IMAGE_CACHE_MAX = 100;
 const imageCache = new Map<string, { media: any; timestamp: number }>();
 
+const parseKeyList = (...values: Array<string | undefined>): string[] => {
+  const keys = values
+    .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+    .flatMap((value) => value.split(/[,\s]+/))
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  return [...new Set(keys)];
+};
+
+const getNewsProviderKeyStatus = () => {
+  const theNewsApi = parseKeyList(process.env.THE_NEWS_API_TOKENS, process.env.THE_NEWS_API_TOKEN);
+  const gnews = parseKeyList(process.env.GNEWS_API_TOKENS, process.env.GNEWS_API_TOKEN);
+  const mediastack = parseKeyList(process.env.MEDIASTACK_API_KEYS, process.env.MEDIASTACK_API_KEY);
+  const newsdata = parseKeyList(process.env.NEWSDATA_API_KEYS, process.env.NEWSDATA_API_KEY);
+  const worldNews = parseKeyList(process.env.WORLD_NEWS_API_KEYS, process.env.WORLD_NEWS_API_KEY);
+  const newsApiOrg = parseKeyList(process.env.NEWSAPI_ORG_KEYS, process.env.NEWSAPI_ORG_KEY);
+
+  const providers = {
+    theNewsApi: theNewsApi.length,
+    gnews: gnews.length,
+    mediastack: mediastack.length,
+    newsdata: newsdata.length,
+    worldNews: worldNews.length,
+    newsApiOrg: newsApiOrg.length
+  };
+
+  const configuredProviders = Object.values(providers).filter((count) => count > 0).length;
+  const totalKeys = Object.values(providers).reduce((sum, count) => sum + count, 0);
+
+  return {
+    providers,
+    configuredProviders,
+    totalProviders: Object.keys(providers).length,
+    totalKeys
+  };
+};
+
 // --- Authentication Middlewares ---
 
 const verifyToken = (req: any, res: Response, next: NextFunction) => {
@@ -619,13 +656,15 @@ app.get('/api/admin/health', verifyToken, async (req: any, res: Response) => {
 
   const providers = providerManager.getProviderStatus();
   const activeCount = Object.values(providers).filter((p: any) => p.health_status === 'healthy').length;
+  const newsApiKeys = getNewsProviderKeyStatus();
 
   res.json({
     database: dbOk ? 'operational' : 'down',
     redis: redisOk ? 'operational' : 'down',
     proxy: 'online',
     providers: { active: activeCount, total: Object.keys(providers).length },
-    maintenance: 'running'
+    maintenance: 'running',
+    newsApiKeys
   });
 });
 

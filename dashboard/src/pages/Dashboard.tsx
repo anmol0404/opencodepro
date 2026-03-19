@@ -194,6 +194,47 @@ const Dashboard = () => {
                 </span>
               </div>
             )}
+            {health?.newsApiKeys && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">News API Keys</span>
+                  <span className="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold rounded-lg border border-indigo-500/20">
+                    {health.newsApiKeys.totalKeys} keys
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">News Providers Configured</span>
+                  <span className="px-2 py-1 bg-cyan-500/10 text-cyan-400 text-xs font-bold rounded-lg border border-cyan-500/20">
+                    {health.newsApiKeys.configuredProviders}/{health.newsApiKeys.totalProviders}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {[
+                    { label: 'The News API', key: 'theNewsApi' },
+                    { label: 'GNews', key: 'gnews' },
+                    { label: 'Mediastack', key: 'mediastack' },
+                    { label: 'NewsData', key: 'newsdata' },
+                    { label: 'World News API', key: 'worldNews' },
+                    { label: 'NewsAPI.org', key: 'newsApiOrg' },
+                  ].map((item) => {
+                    const count = health.newsApiKeys.providers?.[item.key] || 0;
+                    const isConfigured = count > 0;
+                    return (
+                      <div key={item.key} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-white/5">
+                        <span className="text-gray-300 text-sm">{item.label}</span>
+                        <span className={`px-2 py-0.5 text-xs font-bold rounded-md border ${
+                          isConfigured
+                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                        }`}>
+                          {count} key{count === 1 ? '' : 's'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
 
             <hr className="border-white/5 my-6" />
 
