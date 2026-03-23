@@ -514,34 +514,65 @@ app.post('/v1/curate', verifyWrapperKey, async (req: any, res: Response) => {
   try {
     const { 
       query, 
+      category,  // NEW: Support category-based curation
       systemPrompt, 
       outputSchema, 
       callbackUrl, 
       trustedDomains, 
-      maxSources 
+      maxSources,
+      curationMetadata  // NEW: Support metadata
     } = req.body;
 
-    if (!query || !systemPrompt || !outputSchema || !callbackUrl) {
-      return res.status(400).json({ 
-        error: "Missing required fields: query, systemPrompt, outputSchema, callbackUrl" 
+    // Support both old (query-based) and new (category-based) formats
+    if (category) {
+      // NEW: Category-based curation
+      if (!category || !systemPrompt || !outputSchema || !callbackUrl) {
+        return res.status(400).json({ 
+          error: "Missing required fields for category-based curation: category, systemPrompt, outputSchema, callbackUrl" 
+        });
+      }
+
+      console.log(`[Proxy] Starting category-based curation for: ${category}`);
+
+      // Start curation asynchronously (Webhook pattern)
+      curationService.curate({
+        category,
+        systemPrompt,
+        outputSchema,
+        callbackUrl,
+        trustedDomains,
+        maxSources,
+        curationMetadata
+      }).catch(err => {
+        console.error(`[Proxy] Async Category Curation Task Failed:`, err.message);
+      });
+
+    } else {
+      // OLD: Query-based curation (backward compatibility)
+      if (!query || !systemPrompt || !outputSchema || !callbackUrl) {
+        return res.status(400).json({ 
+          error: "Missing required fields: query, systemPrompt, outputSchema, callbackUrl" 
+        });
+      }
+
+      console.log(`[Proxy] Starting query-based curation for: ${query}`);
+
+      // Start curation asynchronously (Webhook pattern)
+      curationService.curate({
+        query,
+        systemPrompt,
+        outputSchema,
+        callbackUrl,
+        trustedDomains,
+        maxSources
+      }).catch(err => {
+        console.error(`[Proxy] Async Query Curation Task Failed:`, err.message);
       });
     }
 
-    // Start curation asynchronously (Webhook pattern)
-    curationService.curate({
-      query,
-      systemPrompt,
-      outputSchema,
-      callbackUrl,
-      trustedDomains,
-      maxSources
-    }).catch(err => {
-      console.error(`[Proxy] Async Curation Task Failed:`, err.message);
-    });
-
     res.json({ 
       status: "processing", 
-      message: "Curation task started. Results will be posted to the callback URL." 
+      message: `Curation task started${category ? ` for ${category}` : ''}. Results will be posted to the callback URL.` 
     });
 
   } catch (err) {
